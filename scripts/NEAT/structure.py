@@ -14,12 +14,12 @@ class OperatorType(Enum):
     Multiple = 1
 
 
+@dataclass(init=False)
 class NodeGene:
-    # uuid: str
-    # type: NodeType
-    # io_index: int
-    # value: float
-    # add_on_operator: OperatorType
+    uuid: str
+    type: NodeType
+    io_index: int
+    add_on_operator: OperatorType
 
     def __init__(self, type:NodeType, add_on_operator:OperatorType,
                  uuid:str=None, io_index:int=0) -> None:
@@ -29,13 +29,14 @@ class NodeGene:
         self.add_on_operator = add_on_operator
 
 
+@dataclass(init=False)
 class ConnectionGene:
-    # uuid: str
-    # input_index: int
-    # output_index: int
-    # weight: float
-    # weight_operator: OperatorType
-    # enabled: bool
+    uuid: str
+    input_index: int
+    output_index: int
+    weight: float
+    weight_operator: OperatorType
+    enabled: bool
 
     def __init__(self, input_index:int, output_index:int, weight:float,
                  weight_operator:OperatorType, uuid:str=None,
