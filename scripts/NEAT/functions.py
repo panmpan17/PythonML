@@ -113,3 +113,40 @@ def connection_mutations(genome:Genome, weight_min:float,
             genome=genome, connection=connection))
 
     return mutations
+
+
+def mutate_genome_by_insert_connection(
+        genome:Genome, connection_index:int, new_node:NodeGene,
+        connection_1:ConnectionGene, connection_2:ConnectionGene) -> Genome:
+    genome_copy = copy.deepcopy(genome)
+    genome_copy.connections[connection_index].enabled = False
+
+    genome_copy.nodes.append(new_node)
+    genome_copy.connections.append(connection_1)
+    genome_copy.connections.append(connection_2)
+
+    return genome_copy
+
+
+def insert_node_mutations(genome:Genome) -> List[Genome]:
+    mutations = []
+    for i, connection in enumerate(genome.connections):
+        middle_index = len(genome.nodes)
+
+        new_node = NodeGene(NodeType.Hidden, OperatorType.Plus)
+        first_half = ConnectionGene(
+            connection.input_index, middle_index, 1,
+            OperatorType.Multiple)
+        second_half = ConnectionGene(
+            middle_index, connection.output_index,
+            connection.weight, connection.weight_operator)
+
+        mutations.append(mutate_genome_by_insert_connection(genome, i, new_node, first_half, second_half))
+
+        first_half = ConnectionGene(
+            connection.input_index, middle_index, 0,
+            OperatorType.Plus)
+
+        mutations.append(mutate_genome_by_insert_connection(genome, i, new_node, first_half, second_half))
+
+    return mutations

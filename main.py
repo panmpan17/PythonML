@@ -27,12 +27,12 @@ if __name__ == "__main__":
 
     genome = Genome(nodes=[
         NodeGene(NodeType.Input, OperatorType.Plus, io_index=0),
-        NodeGene(NodeType.Input, OperatorType.Plus, io_index=1),
-        # NodeGene(NodeType.Hidden, OperatorType.Plus),
         NodeGene(NodeType.Output, OperatorType.Plus),
-    ], connections=[])
+    ], connections=[
+        ConnectionGene(0, 1, 1, OperatorType.Plus)
+    ])
 
-    mutations = connection_mutations(genome=genome, weight_min=-4, weight_max=4)
+    mutations = insert_node_mutations(genome=genome)
     pprint.pprint(genome)
     for mutation in mutations:
         pprint.pprint(mutation)
