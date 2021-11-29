@@ -4,3 +4,4 @@ __pycache__/
 [Bb]uild/
 [Bb]uilds/
 .vscode/
+result*
