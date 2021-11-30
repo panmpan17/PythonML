@@ -15,7 +15,7 @@ class NodeType(Enum):
 
 class OperatorType(Enum):
     Plus = 0
-    Multiple = 1
+    Multiply = 1
 
 
 @dataclass(init=False)
@@ -147,3 +147,9 @@ class Genome:
 class ConnectionPair:
     input_node_index: int
     output_nodex_index: int
+
+
+@dataclass
+class Range:
+    min_:float
+    max_:float

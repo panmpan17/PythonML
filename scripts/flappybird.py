@@ -1,4 +1,9 @@
+import random
+import time
+import json
+
 from dataclasses import dataclass
+from scripts.NEAT import Genome, genome_feed_data, connection_weight_random_add
 from .pygame_foundation import *
 
 
@@ -41,20 +46,22 @@ class Grounds(Entity):
         if self.spawn_interval_timer > self.spawn_interval:
             self.spawn_interval_timer = 0
 
+            y = (self.screen_size[1] / 2) + random.randint(-150, 150)
+
             self.grounds.append(
                 Ground(
                     self.screen_size[0] - 10,
-                    (0, 20, (self.screen_size[1] / 2) - self.gap),
-                    ((self.screen_size[1] / 2) + self.gap, 20, self.screen_size[1]),
+                    (0, 30, y - self.gap),
+                    (y + self.gap, 30, self.screen_size[1]),
                     ))
         
         # Check up ground and bottom ground
         for bird in self.birds:
-            bird.touched = False
-            if bird.position[1] - bird.collider_size < self.min_y:
-                bird.touched = True
-            elif bird.position[1] + bird.collider_size > self.max_y:
-                bird.touched = True
+            if bird.alive:
+                if bird.position[1] - bird.collider_size < self.min_y:
+                    bird.kill()
+                elif bird.position[1] + bird.collider_size > self.max_y:
+                    bird.kill()
 
         # Move ground and check collision
         remove = None
@@ -64,14 +71,19 @@ class Grounds(Entity):
                 remove = i
 
             for bird in self.birds:
-                if not bird.touched:
-                    bird.touched = self.AABB_vs_circle(
-                        (ground.x_offset, *ground.up_ground), bird.position, bird.collider_size)
-                if not bird.touched:
-                    bird.touched = self.AABB_vs_circle(
-                        (ground.x_offset, *ground.bottom_ground), bird.position, bird.collider_size)
+                if bird.alive:
+                    if self.AABB_vs_circle((ground.x_offset,
+                                            *ground.up_ground),
+                                           bird.position, bird.collider_size):
+                        bird.kill()
+                if bird.alive:
+                    if self.AABB_vs_circle((ground.x_offset,
+                                            *ground.bottom_ground),
+                                           bird.position, bird.collider_size):
+                        bird.kill()
         
         if remove is not None:
+            FlappyBirdGame.Score += 1
             self.grounds.pop(remove)
 
     def draw(self, window: ManagedWindow):
@@ -92,10 +104,15 @@ class Bird(Entity):
         self.collider_size = collider_size
 
         self.alive = True
-        self.touched = False
         self.velocity = 0
     
+    def kill(self) -> None:
+        self.alive = False
+
     def update(self, delta_time: float):
+        if not self.alive:
+            return
+
         self.velocity += self.Gravity * delta_time
 
         if InputSystem.K_SPACE:
@@ -104,27 +121,105 @@ class Bird(Entity):
         self.position = (self.position[0], self.position[1] + self.velocity * delta_time)
     
     def draw(self, window: ManagedWindow):
-        if self.touched:
-            pygame.draw.circle(window.surface, Color.YELLOW, self.position, self.collider_size, 1)
-        else:
+        if self.alive:
+            # pygame.draw.circle(window.surface, Color.YELLOW, self.position, self.collider_size, 1)
             pygame.draw.circle(window.surface, Color.GREEN, self.position, self.collider_size, 1)
 
 
+class GenomeBird(Bird):
+    def __init__(self, genome:Genome, collider_size: int, position: Vector) -> None:
+        super().__init__(collider_size, position)
+        self.genome = genome
+        self.score = 0
+    
+    def kill(self) -> None:
+        super().kill()
+        self.score = time.time()
+
+    def update(self, delta_time: float):
+        self.velocity += self.Gravity * delta_time
+
+        results = genome_feed_data(genome=self.genome, inputs=[
+            # self.position[0],
+            self.position[1],
+            # self.collider_size,
+            FlappyBirdGame.UpGroundY,
+            FlappyBirdGame.BottomGroundY,
+        ])
+        if results[0] > 0:
+            self.velocity = self.JumpForce
+        
+        self.position = (self.position[0], self.position[1] + self.velocity * delta_time)
+
+
 class FlappyBirdGame(ManagedWindow):
-    def __init__(self) -> None:
+    UpGroundY = 0
+    BottomGroundY = 0
+    Score = 0
+
+    def __init__(self, pygame_running) -> None:
         super().__init__((300, 500), step_update=False, tick=30)
 
-        self.grounds = Grounds(480, 20, (300, 500), 2, 80, -100)
+        self.grounds = Grounds(480, 20, (300, 500), 2.5, 80, -100)
         self.children.append(self.grounds)
 
-        self.bird = Bird(20, (150, 250))
-        self.children.append(self.bird)
-        self.grounds.birds.append(self.bird)
-    
-    def update(self, delta_time: float):
-        if self.bird.touched:
-            self.bird.position = (150, 250)
-            self.bird.velocity = 0
+        self.birds: List[GenomeBird] = []
+        self.grounds.birds = self.birds
 
-            self.grounds.spawn_interval_timer = self.grounds.spawn_interval - 1
-            self.grounds.grounds.clear()
+        self.pygame_running = pygame_running
+
+    def update(self, delta_time: float):
+        if len(self.grounds.grounds) == 0:
+            FlappyBirdGame.UpGroundY = 200
+            FlappyBirdGame.BottomGroundY = 300
+        else:
+            FlappyBirdGame.UpGroundY = self.grounds.grounds[0].up_ground[0] + self.grounds.grounds[0].up_ground[2]
+            FlappyBirdGame.BottomGroundY = self.grounds.grounds[0].bottom_ground[0]
+
+        all_dead = True
+        for bird in self.birds:
+            if bird.alive:
+                bird.update(delta_time)
+
+                if self.pygame_running:
+                    bird.draw(self)
+                all_dead = False
+
+        if all_dead:
+            self.reset()
+        
+        if self.Score > 1000:
+            for bird in self.birds:
+                if bird.alive:
+                    with open("result.json", "w") as f:
+                        json.dump(bird.genome, f, default=lambda obj: obj.toJSON(), indent=4)
+
+                    if self.pygame_running:
+                        pygame.quit()
+                    sys.exit()
+                    break
+
+    def reset(self):
+        best_birds = sorted(self.birds, key=lambda bird: bird.score, reverse=True)[:10]
+
+        self.birds.clear()
+
+        for bird in best_birds:
+            variants = connection_weight_random_add(bird.genome, 40, -4, 4)
+            for variant in variants:
+                bird = GenomeBird(variant, 20, (80, 250))
+                bird.position = (80, 250)
+                bird.velocity = 0
+                self.birds.append(bird)
+
+        self.grounds.spawn_interval_timer = self.grounds.spawn_interval - 1
+        self.grounds.grounds.clear()
+
+    def run_without_pygame(self):
+        delta_time = 1 / self.tick
+
+        while True:
+            for child in self.children:
+                child.update(delta_time)
+            
+            self.update(delta_time)

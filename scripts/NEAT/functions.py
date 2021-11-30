@@ -23,13 +23,13 @@ def genome_feed_data(genome:Genome, inputs:List[float]) -> List[float]:
         if connection.enabled:
             if connection.weight_operator == OperatorType.Plus:
                 value = values[connection.input_index] + connection.weight
-            elif connection.weight_operator == OperatorType.Multiple:
+            elif connection.weight_operator == OperatorType.Multiply:
                 value = values[connection.input_index] * connection.weight
             
             output_node_operator = genome.nodes[connection.output_index].add_on_operator
             if output_node_operator == OperatorType.Plus:
                 values[connection.output_index] += value
-            elif output_node_operator == OperatorType.Multiple:
+            elif output_node_operator == OperatorType.Multiply:
                 if (values[connection.output_index] == 0):
                     values[connection.output_index] = value
                 else:
@@ -107,7 +107,7 @@ def connection_mutations(genome:Genome, weight_min:float,
 
         connection = ConnectionGene(pair.input_node_index,
                                     pair.output_nodex_index,
-                                    weight, OperatorType.Multiple)
+                                    weight, OperatorType.Multiply)
 
         mutations.append(mutate_genome_by_add_new_connection(
             genome=genome, connection=connection))
@@ -136,7 +136,7 @@ def insert_node_mutations(genome:Genome) -> List[Genome]:
         new_node = NodeGene(NodeType.Hidden, OperatorType.Plus)
         first_half = ConnectionGene(
             connection.input_index, middle_index, 1,
-            OperatorType.Multiple)
+            OperatorType.Multiply)
         second_half = ConnectionGene(
             middle_index, connection.output_index,
             connection.weight, connection.weight_operator)
@@ -150,3 +150,15 @@ def insert_node_mutations(genome:Genome) -> List[Genome]:
         mutations.append(mutate_genome_by_insert_connection(genome, i, new_node, first_half, second_half))
 
     return mutations
+
+
+def connection_weight_random_add(genome:Genome, count:int, range_min:float, range_max:float) -> List[Genome]:
+    variants = []
+
+    for i in range(count):
+        variant:Genome = copy.deepcopy(genome)
+        for connection in variant.connections:
+            connection.weight += random_float(range_min, range_max)
+        variants.append(variant)
+    
+    return variants

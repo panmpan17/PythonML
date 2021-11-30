@@ -114,16 +114,16 @@ class ManagedWindow:
 
         self.tick = tick
 
-        pygame.init()
-
     def update(self, delta_time: float):
         pass
 
     def run(self):
+        pygame.init()
+
         self.surface = pygame.display.set_mode(self.size)
 
-        clock = pygame.time.Clock()
-        delta_time = 1 / 30
+        # clock = pygame.time.Clock()
+        delta_time = 1 / self.tick
 
         while True:
             InputSystem.MOUSE_DOWN = False
@@ -166,5 +166,5 @@ class ManagedWindow:
             self.update(delta_time)
 
             pygame.display.flip()
-            clock.tick(self.tick)
+            # clock.tick(self.tick)
 

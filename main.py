@@ -1,53 +1,29 @@
-import pprint
-import json
+import time
+
+from scripts.NEAT.functions import random_float
 
 from scripts.NEAT import *
-from scripts.flappybird import FlappyBirdGame
+from scripts.flappybird import FlappyBirdGame, GenomeBird
 
 
 if __name__ == "__main__":
-    # genome = Genome(nodes=[
-    #     NodeGene(NodeType.Input, OperatorType.Plus, io_index=0),
-    #     NodeGene(NodeType.Input, OperatorType.Plus, io_index=1),
-    #     # NodeGene(NodeType.Hidden, OperatorType.Plus),
-    #     NodeGene(NodeType.Output, OperatorType.Plus),
-    # ], connections=[])
+    game = FlappyBirdGame(False)
 
-    # new_pairs = analyze_potential_new_connections(genome=genome)
-    # print(new_pairs)
+    for i in range(4):
+        genome = Genome(nodes=[
+            NodeGene(NodeType.Input, OperatorType.Plus, io_index=0),
+            NodeGene(NodeType.Input, OperatorType.Plus, io_index=1),
+            NodeGene(NodeType.Input, OperatorType.Plus, io_index=2),
+            NodeGene(NodeType.Hidden, OperatorType.Plus),
+            NodeGene(NodeType.Output, OperatorType.Plus),
+        ], connections=[
+            ConnectionGene(0, 3, random_float(-10, 10), OperatorType.Multiply),
+            ConnectionGene(1, 3, random_float(-10, 10), OperatorType.Multiply),
+            ConnectionGene(2, 3, random_float(-10, 10), OperatorType.Multiply),
+            ConnectionGene(3, 4, random_float(-10, 10), OperatorType.Plus),
+        ])
 
-    # genome = Genome(nodes=[
-    #     NodeGene(NodeType.Input, OperatorType.Plus, io_index=0),
-    #     NodeGene(NodeType.Input, OperatorType.Plus, io_index=1),
-    #     # NodeGene(NodeType.Hidden, OperatorType.Plus),
-    #     NodeGene(NodeType.Output, OperatorType.Plus),
-    # ], connections=[
-    #     ConnectionGene(0, 2, 1, OperatorType.Plus)
-    # ])
+        bird = GenomeBird(genome, 20, (80, 250))
+        game.birds.append(bird)
 
-    # new_pairs = analyze_potential_new_connections(genome=genome)
-    # print(new_pairs)
-
-    genome = Genome(nodes=[
-        NodeGene(NodeType.Input, OperatorType.Plus, io_index=0),
-        NodeGene(NodeType.Output, OperatorType.Plus),
-    ], connections=[
-        ConnectionGene(0, 1, 1, OperatorType.Plus)
-    ])
-
-    with open("result.json", "w") as f:
-        json.dump(genome, f, default=lambda obj: obj.toJSON(), indent=4)
-
-    with open("result.json") as f:
-        genome_1 = genome.fromJSON(json.load(f))
-    
-    # pprint.pprint(genome)
-    # pprint.pprint(genome_1)
-    print(genome == genome_1)
-
-    # mutations = insert_node_mutations(genome=genome)
-    # pprint.pprint(genome)
-    # for mutation in mutations:
-    #     pprint.pprint(mutation)
-    # game = FlappyBirdGame()
-    # game.run()
+    game.run_without_pygame()
