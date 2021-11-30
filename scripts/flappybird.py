@@ -2,8 +2,11 @@ import random
 import time
 import json
 
+
+from .utilities import ProgressBar
 from dataclasses import dataclass
-from scripts.NEAT import Genome, genome_feed_data, connection_weight_random_add
+from scripts.NEAT import Genome, genome_feed_data, connection_weight_random_add,\
+                         connection_mutations, insert_node_mutations
 from .pygame_foundation import *
 
 
@@ -157,16 +160,23 @@ class FlappyBirdGame(ManagedWindow):
     BottomGroundY = 0
     Score = 0
 
-    def __init__(self, pygame_running) -> None:
-        super().__init__((300, 500), step_update=False, tick=30)
+    def __init__(self, pygame_running, tick_limit=False, gap=80) -> None:
+        super().__init__((300, 500), step_update=False, tick=30, tick_limit=tick_limit)
 
-        self.grounds = Grounds(480, 20, (300, 500), 2.5, 80, -100)
+        self.grounds = Grounds(max_y=480, min_y=20, screen_size=(300, 500),
+                               spawn_interval=2.5, gap=gap, move_speed=-100)
         self.children.append(self.grounds)
 
         self.birds: List[GenomeBird] = []
         self.grounds.birds = self.birds
 
         self.pygame_running = pygame_running
+
+        if not pygame_running:
+            self.progress_bar = ProgressBar(1000, length=100)
+
+        self.last_best_score = 0
+        self.round_since_last_best_score_refresh = 0
 
     def update(self, delta_time: float):
         if len(self.grounds.grounds) == 0:
@@ -200,22 +210,55 @@ class FlappyBirdGame(ManagedWindow):
                     break
 
     def reset(self):
-        best_birds = sorted(self.birds, key=lambda bird: bird.score, reverse=True)[:10]
+        best_birds = sorted(self.birds, key=lambda bird: bird.score, reverse=True)
 
-        self.birds.clear()
+        if not self.pygame_running:
+            # print(FlappyBirdGame.Score, self.progress_bar.progress_length)
+            self.progress_bar.set_progress(FlappyBirdGame.Score)
 
-        for bird in best_birds:
-            variants = connection_weight_random_add(bird.genome, 40, -4, 4)
-            for variant in variants:
-                bird = GenomeBird(variant, 20, (80, 250))
-                bird.position = (80, 250)
-                bird.velocity = 0
-                self.birds.append(bird)
+        if FlappyBirdGame.Score > self.last_best_score:
+            self.last_best_score = FlappyBirdGame.Score
+            self.round_since_last_best_score_refresh = 0
+        else:
+            self.round_since_last_best_score_refresh += 1
+
+        if self.round_since_last_best_score_refresh > 10:
+            best_birds = best_birds[:10]
+
+            self.round_since_last_best_score_refresh = 0
+
+            for bird in best_birds:
+                mutations = connection_mutations(bird.genome, -4, 4)
+                mutations += insert_node_mutations(bird.genome)
+                mutations = random.choices(mutations, k=10)
+
+                for genome in mutations:
+                    variants = connection_weight_random_add(genome, 20, -4, 4)
+                    for variant in variants:
+                        bird = GenomeBird(variant, 20, (80, 250))
+                        bird.position = (80, 250)
+                        bird.velocity = 0
+                        self.birds.append(bird)
+
+        else:
+            best_birds = best_birds[:40]
+            self.birds.clear()
+
+            for bird in best_birds:
+                variants = connection_weight_random_add(bird.genome, 40, -4, 4)
+                for variant in variants:
+                    bird = GenomeBird(variant, 20, (80, 250))
+                    bird.position = (80, 250)
+                    bird.velocity = 0
+                    self.birds.append(bird)
 
         self.grounds.spawn_interval_timer = self.grounds.spawn_interval - 1
         self.grounds.grounds.clear()
 
+        FlappyBirdGame.Score = 0
+
     def run_without_pygame(self):
+        self.progress_bar.set_progress(0)
         delta_time = 1 / self.tick
 
         while True:
@@ -223,3 +266,9 @@ class FlappyBirdGame(ManagedWindow):
                 child.update(delta_time)
             
             self.update(delta_time)
+
+    def execute(self):
+        if self.pygame_running:
+            self.run()
+        else:
+            self.run_without_pygame()

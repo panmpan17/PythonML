@@ -102,7 +102,7 @@ class Point(Entity):
 
 
 class ManagedWindow:
-    def __init__(self, size: Vector, step_update=False, tick=30) -> None:
+    def __init__(self, size: Vector, step_update=False, tick=30, tick_limit=True) -> None:
         self.size = size
         self.full_rect = (0, 0, *size)
         self.surface: pygame.Surface = None
@@ -113,6 +113,7 @@ class ManagedWindow:
         self.step_update = step_update
 
         self.tick = tick
+        self.tick_limit = tick_limit
 
     def update(self, delta_time: float):
         pass
@@ -122,14 +123,14 @@ class ManagedWindow:
 
         self.surface = pygame.display.set_mode(self.size)
 
-        # clock = pygame.time.Clock()
+        clock = pygame.time.Clock()
         delta_time = 1 / self.tick
 
         while True:
             InputSystem.MOUSE_DOWN = False
             InputSystem.MOUSE_UP = False
-            update_key_pressed = False
             InputSystem.K_SPACE = False
+            update_key_pressed = False
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -166,5 +167,7 @@ class ManagedWindow:
             self.update(delta_time)
 
             pygame.display.flip()
-            # clock.tick(self.tick)
+
+            if self.tick_limit:
+                clock.tick(self.tick)
 
