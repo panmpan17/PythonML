@@ -72,6 +72,8 @@ class InputSystem:
     MOUSE_POS = (0, 0)
 
     K_SPACE = False
+    K_Z = False
+    K_X = False
 
 
 class Entity:
@@ -130,6 +132,8 @@ class ManagedWindow:
             InputSystem.MOUSE_DOWN = False
             InputSystem.MOUSE_UP = False
             InputSystem.K_SPACE = False
+            InputSystem.K_Z = False
+            InputSystem.K_X = False
             update_key_pressed = False
 
             for event in pygame.event.get():
@@ -146,6 +150,10 @@ class ManagedWindow:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         InputSystem.K_SPACE = True
+                    elif event.key == pygame.K_x:
+                        InputSystem.K_X = True
+                    elif event.key == pygame.K_z:
+                        InputSystem.K_Z = True
                     elif event.key == pygame.K_LSHIFT:
                         update_key_pressed = True
                     elif event.key == pygame.K_RETURN:

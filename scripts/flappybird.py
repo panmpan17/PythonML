@@ -31,33 +31,61 @@ class Grounds(Entity):
 
         return True
 
-    def __init__(self, max_y, min_y, screen_size, spawn_interval, gap, move_speed) -> None:
+    def __init__(self, max_y, min_y, screen_size, spawn_interval, gaps, move_speed) -> None:
         self.max_y = max_y
         self.min_y = min_y
         self.screen_size = screen_size
 
         self.spawn_interval = spawn_interval
         self.spawn_interval_timer = spawn_interval - 1
-        self.gap = gap
+        self.gaps = gaps
+        self.gap_index = 0
         self.grounds: List[Ground] = []
+
+        self.ground_y_list = [None, None, None, -150, 150, -150]
+        self.ground_y_index = 0
 
         self.move_speed = move_speed
         self.birds: List["Bird"] = []
+
+    @property
+    def gap(self):
+        gap = self.gaps[self.gap_index]
+
+        self.gap_index += 1
+        if self.gap_index >= len(self.gaps):
+            self.gap_index = 0
+
+        return gap
+
+    @property
+    def groud_y(self):
+        ground_y = self.ground_y_list[self.ground_y_index]
+
+        self.ground_y_index += 1
+        if self.ground_y_index >= len(self.ground_y_list):
+            self.ground_y_index = 0
+        
+        if ground_y is None:
+            ground_y = random.randint(-150, 150)
+        
+        return ground_y
 
     def update(self, delta_time: float):
         self.spawn_interval_timer += delta_time
         if self.spawn_interval_timer > self.spawn_interval:
             self.spawn_interval_timer = 0
 
-            y = (self.screen_size[1] / 2) + random.randint(-150, 150)
+            y = (self.screen_size[1] / 2) + self.groud_y
 
+            gap = self.gap
             self.grounds.append(
                 Ground(
                     self.screen_size[0] - 10,
-                    (0, 30, y - self.gap),
-                    (y + self.gap, 30, self.screen_size[1]),
+                    (0, 30, y - gap),
+                    (y + gap, 30, self.screen_size[1]),
                     ))
-        
+
         # Check up ground and bottom ground
         for bird in self.birds:
             if bird.alive:
@@ -120,12 +148,13 @@ class Bird(Entity):
 
         if InputSystem.K_SPACE:
             self.velocity = self.JumpForce
+        if InputSystem.K_Z:
+            self.velocity += self.Gravity * delta_time
         
         self.position = (self.position[0], self.position[1] + self.velocity * delta_time)
-    
+
     def draw(self, window: ManagedWindow):
         if self.alive:
-            # pygame.draw.circle(window.surface, Color.YELLOW, self.position, self.collider_size, 1)
             pygame.draw.circle(window.surface, Color.GREEN, self.position, self.collider_size, 1)
 
 
@@ -134,6 +163,7 @@ class GenomeBird(Bird):
         super().__init__(collider_size, position)
         self.genome = genome
         self.score = 0
+        self.dropping = False
     
     def kill(self) -> None:
         super().kill()
@@ -151,8 +181,19 @@ class GenomeBird(Bird):
         ])
         if results[0] > 0:
             self.velocity = self.JumpForce
+
+        self.dropping = results[1] > 0
+        if results[1] > 0:
+            self.velocity += self.Gravity * delta_time
         
         self.position = (self.position[0], self.position[1] + self.velocity * delta_time)
+
+    def draw(self, window: ManagedWindow):
+        if self.alive:
+            if self.dropping:
+                pygame.draw.circle(window.surface, Color.YELLOW, self.position, self.collider_size, 1)
+            else:
+                pygame.draw.circle(window.surface, Color.GREEN, self.position, self.collider_size, 1)
 
 
 class FlappyBirdGame(ManagedWindow):
@@ -160,11 +201,11 @@ class FlappyBirdGame(ManagedWindow):
     BottomGroundY = 0
     Score = 0
 
-    def __init__(self, pygame_running, tick_limit=False, gap=80) -> None:
+    def __init__(self, pygame_running, tick_limit=False, gaps=[80]) -> None:
         super().__init__((300, 500), step_update=False, tick=30, tick_limit=tick_limit)
 
         self.grounds = Grounds(max_y=480, min_y=20, screen_size=(300, 500),
-                               spawn_interval=2.5, gap=gap, move_speed=-100)
+                               spawn_interval=2.5, gaps=gaps, move_speed=-100)
         self.children.append(self.grounds)
 
         self.birds: List[GenomeBird] = []
@@ -210,6 +251,17 @@ class FlappyBirdGame(ManagedWindow):
                     break
 
     def reset(self):
+        if len(self.birds) == 1 and "score" not in self.birds[0].__dict__:
+            self.birds[0].position = (40, 250)
+            self.birds[0].velocity = 0
+            self.birds[0].alive = True
+
+            self.grounds.spawn_interval_timer = self.grounds.spawn_interval - 1
+            self.grounds.grounds.clear()
+
+            FlappyBirdGame.Score = 0
+            return
+
         best_birds = sorted(self.birds, key=lambda bird: bird.score, reverse=True)
 
         if not self.pygame_running:
@@ -235,8 +287,8 @@ class FlappyBirdGame(ManagedWindow):
                 for genome in mutations:
                     variants = connection_weight_random_add(genome, 20, -4, 4)
                     for variant in variants:
-                        bird = GenomeBird(variant, 20, (80, 250))
-                        bird.position = (80, 250)
+                        bird = GenomeBird(variant, 20, (40, 250))
+                        # bird.position = (40, 250)
                         bird.velocity = 0
                         self.birds.append(bird)
 
@@ -247,8 +299,8 @@ class FlappyBirdGame(ManagedWindow):
             for bird in best_birds:
                 variants = connection_weight_random_add(bird.genome, 40, -4, 4)
                 for variant in variants:
-                    bird = GenomeBird(variant, 20, (80, 250))
-                    bird.position = (80, 250)
+                    bird = GenomeBird(variant, 20, (40, 250))
+                    # bird.position = (40, 250)
                     bird.velocity = 0
                     self.birds.append(bird)
 
