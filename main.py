@@ -5,6 +5,7 @@ import argparse
 
 from scripts.NEAT import *
 from scripts.flappybird import FlappyBirdGame, GenomeBird, Bird
+from scripts.navigation_2d import NavigationGame, Character
 
 
 class TerminalController:
@@ -96,8 +97,22 @@ class TerminalController:
         self.game.execute()
 
 
+class Navgation2DTerminalController:
+    def __init__(self):
+        self.game = NavigationGame()
+
+    def run(self):
+        character = Character((200, 200), 10)
+
+        self.game.children.append(character)
+        self.game.characters.append(character)
+        self.game.run()
+
+
 if __name__ == "__main__":
-    controller = TerminalController()
-    controller.parse_enviroment_argument()
-    controller.setup()
+    # controller = TerminalController()
+    # controller.parse_enviroment_argument()
+    # controller.setup()
+    # controller.run()
+    controller = Navgation2DTerminalController()
     controller.run()

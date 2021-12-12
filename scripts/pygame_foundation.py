@@ -1,6 +1,6 @@
 import pygame
-import sys
 
+from enum import Enum
 from typing import List, Tuple
 
 
@@ -66,6 +66,13 @@ class Math:
         return (vector[0] / magnitude, vector[1] / magnitude)
 
 
+class KeyCode(Enum):
+    W = 0
+    S = 1
+    A = 2
+    D = 3
+
+
 class InputSystem:
     MOUSE_DOWN = False
     MOUSE_UP = False
@@ -74,6 +81,39 @@ class InputSystem:
     K_SPACE = False
     K_Z = False
     K_X = False
+    K_W = 0
+    K_S = 0
+    K_A = 0
+    K_D = 0
+
+    @classmethod
+    def check_key_pressed(cls, key: KeyCode):
+        if key == KeyCode.W:
+            return cls.K_W != 0
+        if key == KeyCode.S:
+            return cls.K_S != 0
+        if key == KeyCode.A:
+            return cls.K_A != 0
+        if key == KeyCode.D:
+            return cls.K_D != 0
+
+    @classmethod
+    def reset_argument(cls):        
+        cls.MOUSE_DOWN = False
+        cls.MOUSE_UP = False
+        cls.MOUSE_POS = (0, 0)
+
+        cls.K_SPACE = False
+        cls.K_Z = False
+        cls.K_X = False
+        if cls.K_W == 1:
+            cls.K_W = 2
+        if cls.K_S == 1:
+            cls.K_S = 2
+        if cls.K_A == 1:
+            cls.K_A = 2
+        if cls.K_D == 1:
+            cls.K_D = 2
 
 
 class Entity:
@@ -129,11 +169,7 @@ class ManagedWindow:
         delta_time = 1 / self.tick
 
         while True:
-            InputSystem.MOUSE_DOWN = False
-            InputSystem.MOUSE_UP = False
-            InputSystem.K_SPACE = False
-            InputSystem.K_Z = False
-            InputSystem.K_X = False
+            InputSystem.reset_argument()
             update_key_pressed = False
 
             for event in pygame.event.get():
@@ -150,6 +186,14 @@ class ManagedWindow:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         InputSystem.K_SPACE = True
+                    elif event.key == pygame.K_a:
+                        InputSystem.K_A = 1
+                    elif event.key == pygame.K_d:
+                        InputSystem.K_D = 1
+                    elif event.key == pygame.K_s:
+                        InputSystem.K_S = 1
+                    elif event.key == pygame.K_w:
+                        InputSystem.K_W = 1
                     elif event.key == pygame.K_x:
                         InputSystem.K_X = True
                     elif event.key == pygame.K_z:
@@ -158,6 +202,16 @@ class ManagedWindow:
                         update_key_pressed = True
                     elif event.key == pygame.K_RETURN:
                         self.step_update = not self.step_update
+
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_a:
+                        InputSystem.K_A = 0
+                    elif event.key == pygame.K_d:
+                        InputSystem.K_D = 0
+                    elif event.key == pygame.K_s:
+                        InputSystem.K_S = 0
+                    elif event.key == pygame.K_w:
+                        InputSystem.K_W = 0
 
             InputSystem.MOUSE_POS = pygame.mouse.get_pos()
             
