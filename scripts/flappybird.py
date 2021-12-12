@@ -31,7 +31,8 @@ class Grounds(Entity):
 
         return True
 
-    def __init__(self, max_y, min_y, screen_size, spawn_interval, gaps, move_speed) -> None:
+    def __init__(self, max_y, min_y, screen_size, spawn_interval, gaps,
+                 ground_y_list, move_speed) -> None:
         self.max_y = max_y
         self.min_y = min_y
         self.screen_size = screen_size
@@ -42,11 +43,11 @@ class Grounds(Entity):
         self.gap_index = 0
         self.grounds: List[Ground] = []
 
-        self.ground_y_list = [None, None, None, -150, 150, -150]
+        self.ground_y_list = ground_y_list
         self.ground_y_index = 0
 
         self.move_speed = move_speed
-        self.birds: List["Bird"] = []
+        self.birds: List["Bird"] = None
 
     @property
     def gap(self):
@@ -125,6 +126,10 @@ class Grounds(Entity):
             pygame.draw.rect(window.surface, Color.GREEN, (ground.x_offset, *ground.up_ground), 1)
             pygame.draw.rect(window.surface, Color.GREEN, (ground.x_offset, *ground.bottom_ground), 1)
 
+    def reset(self):
+        self.grounds.clear()
+        self.gap_index = 0
+        self.ground_y_index = 0
 
 class Bird(Entity):
     Gravity = 400
@@ -201,11 +206,14 @@ class FlappyBirdGame(ManagedWindow):
     BottomGroundY = 0
     Score = 0
 
-    def __init__(self, pygame_running, tick_limit=False, gaps=[80]) -> None:
+    def __init__(self, pygame_running, tick_limit=False, gaps=[80],
+                 ground_y_list=[None, None, None, -150, 150, -150]) -> None:
         super().__init__((300, 500), step_update=False, tick=30, tick_limit=tick_limit)
 
-        self.grounds = Grounds(max_y=480, min_y=20, screen_size=(300, 500),
-                               spawn_interval=2.5, gaps=gaps, move_speed=-100)
+        self.grounds = Grounds(
+            max_y=480, min_y=20, screen_size=(300, 500), spawn_interval=2.5,
+            gaps=gaps, ground_y_list=ground_y_list,
+            move_speed=-100)
         self.children.append(self.grounds)
 
         self.birds: List[GenomeBird] = []
@@ -305,7 +313,7 @@ class FlappyBirdGame(ManagedWindow):
                     self.birds.append(bird)
 
         self.grounds.spawn_interval_timer = self.grounds.spawn_interval - 1
-        self.grounds.grounds.clear()
+        self.grounds.reset()
 
         FlappyBirdGame.Score = 0
 

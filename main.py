@@ -72,21 +72,25 @@ class TerminalController:
         with open("result.json") as f:
             genome = Genome.fromJSON(json.load(f))
 
-            bird = GenomeBird(genome, 20, (80, 250))
+            bird = GenomeBird(genome, 20, (40, 250))
             self.game.birds.append(bird)
 
     def setup_empty_bird(self):
-        for i in range(4):
-            genome = Genome(nodes=[
-                NodeGene(NodeType.Input, OperatorType.Plus, io_index=0),
-                NodeGene(NodeType.Input, OperatorType.Plus, io_index=1),
-                NodeGene(NodeType.Input, OperatorType.Plus, io_index=2),
-                NodeGene(NodeType.Output, OperatorType.Plus),
-                NodeGene(NodeType.Output, OperatorType.Plus),
-            ], connections=[])
+        base_genome = Genome(nodes=[
+            NodeGene(NodeType.Input, OperatorType.Plus, io_index=0),
+            NodeGene(NodeType.Input, OperatorType.Plus, io_index=1),
+            NodeGene(NodeType.Input, OperatorType.Plus, io_index=2),
+            NodeGene(NodeType.Output, OperatorType.Plus),
+            NodeGene(NodeType.Output, OperatorType.Plus),
+        ], connections=[])
 
-            bird = GenomeBird(genome, 20, (80, 250))
-            self.game.birds.append(bird)
+        mutations = connection_mutations(base_genome, 0, 0)
+
+        for mutation in mutations:
+            variants = connection_weight_random_add(mutation, 20, -4, 4)
+            for variant in variants:
+                bird = GenomeBird(variant, 20, (40, 250))
+                self.game.birds.append(bird)
 
     def run(self):
         self.game.execute()
