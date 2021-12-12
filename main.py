@@ -104,8 +104,7 @@ class Navgation2DTerminalController:
     def run(self):
         character = Character((200, 200), 10)
 
-        self.game.children.append(character)
-        self.game.characters.append(character)
+        self.game.add_character(character=character)
         self.game.run()
 
 
