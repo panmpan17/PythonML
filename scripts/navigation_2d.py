@@ -1,5 +1,5 @@
 import random
-import pygame
+# import pygame
 import math
 import json
 import os
@@ -102,6 +102,7 @@ class Character(Entity):
             self.recalculate_raycasts()
     
     def draw(self, window: NEATManagedWindow):
+        import pygame
         pygame.draw.circle(window.surface, Color.GREEN, self.position, self.radius, 2)
         # Draw facing
         # pygame.draw.line(window.surface, Color.YELLOW, self.position,
@@ -214,6 +215,7 @@ class NavigationGame(NEATManagedWindow):
 
     def update(self, delta_time: float):
         if self.run_pygame:
+            import pygame
             pygame.draw.line(self.surface, Color.GREEN, (self.min_x, self.min_y), (self.min_x, self.max_y))
             pygame.draw.line(self.surface, Color.GREEN, (self.min_x, self.max_y), (self.max_x, self.max_y))
             pygame.draw.line(self.surface, Color.GREEN, (self.max_x, self.max_y), (self.max_x, self.min_y))

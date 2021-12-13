@@ -1,5 +1,3 @@
-import pygame
-
 from enum import Enum
 from typing import List, Tuple
 
@@ -140,6 +138,7 @@ class Point(Entity):
         pass
 
     def draw(self, window: "ManagedWindow"):
+        import pygame
         pygame.draw.circle(window.surface, self.color, self.position, self.radius, self.width)
 
 
@@ -147,7 +146,7 @@ class ManagedWindow:
     def __init__(self, size: Vector, step_update=False, tick=30, tick_limit=True) -> None:
         self.size = size
         self.full_rect = (0, 0, *size)
-        self.surface: pygame.Surface = None
+        self.surface = None
         self.background_color = Color.BLACK
 
         self.children: List[Entity] = []
@@ -161,6 +160,7 @@ class ManagedWindow:
         pass
 
     def run(self):
+        import pygame
         pygame.init()
 
         self.surface = pygame.display.set_mode(self.size)
