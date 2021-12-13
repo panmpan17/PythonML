@@ -1,11 +1,13 @@
+import random
 import time
 import json
 import argparse
+from typing import List
 
 
 from scripts.NEAT import *
 from scripts.flappybird import FlappyBirdGame, GenomeBird, Bird
-from scripts.navigation_2d import NavigationGame, Character
+from scripts.navigation_2d import GenomeCharacter, NavigationGame, Character
 
 
 class TerminalController:
@@ -99,13 +101,46 @@ class TerminalController:
 
 class Navgation2DTerminalController:
     def __init__(self):
-        self.game = NavigationGame()
+        self.game = NavigationGame(False, tick_limit=False)
+
+    def setup(self):
+        self.setup_empty_genome()
+
+    def setup_from_read(self):
+        with open("result/character-keyboard.json") as f:
+            genomes = json.load(f)
+
+            # for genome_json in genomes:
+            genome_json = genomes[0]
+            genome = Genome.fromJSON(genome_json)
+
+            character = GenomeCharacter(genome, (50, 100), 10)
+            self.game.add_character(character=character)
+
+    def setup_empty_genome(self):
+        nodes: List[NodeGene] = []
+        for i in range(16):
+            nodes.append(NodeGene(NodeType.Input, OperatorType.Plus, io_index=i))
+        
+        nodes.append(NodeGene(NodeType.Output, OperatorType.Plus))
+        nodes.append(NodeGene(NodeType.Output, OperatorType.Plus))
+        nodes.append(NodeGene(NodeType.Output, OperatorType.Plus))
+
+        base_genome = Genome(nodes=nodes, connections=[])
+
+        mutations = random.choices(connection_mutations(base_genome, 0, 0), k=20)
+
+        for mutation in mutations:
+            variants = connection_weight_random_add(mutation, 10, -4, 4)
+            for variant in variants:
+                character = GenomeCharacter(variant, (50, 100), 10)
+                self.game.add_character(character=character)
 
     def run(self):
-        character = Character((200, 200), 10)
-
-        self.game.add_character(character=character)
-        self.game.run()
+        try:
+            self.game.start()
+        except KeyboardInterrupt:
+            self.game.save_characters_unexpected_quit(20, "keyboard")
 
 
 if __name__ == "__main__":
@@ -113,5 +148,7 @@ if __name__ == "__main__":
     # controller.parse_enviroment_argument()
     # controller.setup()
     # controller.run()
+
     controller = Navgation2DTerminalController()
+    controller.setup()
     controller.run()
